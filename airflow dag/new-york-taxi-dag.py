@@ -13,8 +13,6 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 
 #other operators
-from airflow.utils.dates import days_ago
-
 from datetime import datetime, timedelta
 
 default_args = {
@@ -26,13 +24,13 @@ default_args = {
     "retry_delay": timedelta(minutes=5)
 }
 
-## Environment Variables
+## Get the environment variables
 CLUSTER_NAME = os.environ.get('CLUSTER_NAME', 'new-york-taxi-dataproc-cluster')
 GCP_PROJECT_ID = os.environ.get('GCP_PROJECT_ID', "new-york-taxi-tutorial-project")
 REGION = os.environ.get('REGION', 'europe-west1')
 ZONE = os.environ.get('ZONE', "europe-west1-d")
 
-#check operator
+####check operator
 BUCKET_NAME = os.environ.get('BUCKET_NAME', "new-york-taxi-data-bucket")
 TRIP_DATA_FILE_NAME_PREFIX = os.environ.get('TRIP_DATA_FILE_NAME_PREFIX', "trip_data/trip_data")
 FARE_DATA_FILE_NAME_PREFIX = os.environ.get('FARE_DATA_FILE_NAME_PREFIX', "fare_data/fare_data")
@@ -40,7 +38,7 @@ FARE_DATA_FILE_NAME_PREFIX = os.environ.get('FARE_DATA_FILE_NAME_PREFIX', "fare_
 #Others
 TEMP_BUCKET = os.environ.get('TEMP_BUCKET', "new-york-taxi-tutorial-project-temporary-bucket")
 
-
+#DataProc Cluster Configurations
 CLUSTER_GENERATOR_CONFIG = ClusterGenerator(
     project_id=GCP_PROJECT_ID,
     zone=ZONE,
@@ -52,6 +50,7 @@ CLUSTER_GENERATOR_CONFIG = ClusterGenerator(
     storage_bucket=TEMP_BUCKET,
 ).make()
 
+#PySpark Job Configurations
 PYSPARK_JOB = {
     "reference": {"project_id": GCP_PROJECT_ID},
     "placement": {"cluster_name": CLUSTER_NAME},
@@ -64,7 +63,8 @@ PYSPARK_JOB = {
 }
 
 
-with DAG(dag_id="new-york-taxi-pipeline", schedule_interval="@monthly", default_args=default_args, start_date=days_ago(2), tags=['new-york-taxi'], catchup=False) as dag:
+#Airflow DAG
+with DAG(dag_id="new-york-taxi-pipeline", schedule_interval="@monthly", default_args=default_args, tags=['new-york-taxi'], catchup=False) as dag:
 
     check_trip_data_file = gcs.GCSObjectsWithPrefixExistenceSensor(
         task_id = "check_trip_data_file",
@@ -98,10 +98,3 @@ with DAG(dag_id="new-york-taxi-pipeline", schedule_interval="@monthly", default_
     )
 
 [check_trip_data_file, check_fare_data_file] >> create_dataproc_cluster >> submit_pyspark_job >> delete_dataproc_cluster
-
-
-
-    
-
-    
-
